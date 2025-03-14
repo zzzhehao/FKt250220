@@ -1,0 +1,153 @@
+---
+title: Specimen Summary by Taxa
+subtitle: "Fkt250220: Ocean Census GoSouth: Searching for New Species in South Sandwich Islands"
+author: Zhehao Hu
+date: last-modified
+format:
+  pdf:
+    geometry:
+      - left=15mm
+      - top=15mm
+    toc: true
+    number-sections: true
+    colorlinks: true
+    mainfont: "Arial"
+    sansfont: "Times New Roman"
+    code-overflow: wrap
+    keep-tex: true
+    include-in-header: 
+      text: |
+        \usepackage{fvextra}
+        \DefineVerbatimEnvironment{Highlighting}{Verbatim}{breaklines,commandchars=\\\{\}}
+        \DefineVerbatimEnvironment{OutputCode}{Verbatim}{breaklines,commandchars=\\\{\}}
+---
+
+<!-- This document is written with Quarto: https://quarto.org/ -->
+<!-- Use shell command `$ quarto render "Specimen_Summary_by_Taxa.qmd" --to pdf` to render the pdf document -->
+
+```{r}
+#| output: false
+#| echo: false
+
+library(tidyverse)
+library(knitr)
+library(kableExtra)
+
+# source("12 Dive Documents/Script/SpecimenLog.R")
+source("../Script/SpecimenLog.R")
+
+Site.abbr <- c(
+    "EMI" = "east Montagu Island",
+    "SMB" = "S Montagu Bank",
+    "MSM" = "Minke seamount",
+    "NT" = "North Trench", 
+    "ST" = "South Trench Site",
+    "WSI" = "west Saunders Island",
+    "SE" = "Saunders East"
+)
+
+Site.LUT <- data.frame(abbr = names(Site.abbr), Site = Site.abbr)
+
+Specimen.sheet <- Specimen.sheet %>% 
+    left_join(Site.LUT) %>% 
+    mutate(Site = abbr)
+
+Specimen.sheet.list <- Specimen.sheet %>%
+    split(f = Specimen.sheet$Taxa_Phylum)
+
+Specimen.table <- map(1:length(Specimen.sheet.list), \(x) {
+    Subsheet <- Specimen.sheet.list[[x]]
+    Subsheet[Subsheet == "NA"] <- NA
+
+    Taxa_Subsheet <- Subsheet %>% dplyr::select(c("OCSS unique no.", starts_with("Taxa_")))
+
+    Phylum <- Subsheet$Taxa_Phylum %>% unique() %>% as.character()
+
+    Subsheet.TaxaCols <- Subsheet %>% names() %>% keep(~ grepl("^Taxa_", .))
+    Subsheet.TaxaPhylum <- Subsheet.TaxaCols[grepl("phylum", Subsheet.TaxaCols, ignore.case = T)]
+    Subsheet.TaxaCollap <- Subsheet.TaxaCols[!grepl("phylum", Subsheet.TaxaCols, ignore.case = T)]
+
+    # Modify the dataframe
+    Sheet.display <- Subsheet %>%
+        mutate(
+            TaxaLabel = paste(!!!syms(Subsheet.TaxaCollap), sep = ", ") %>%
+                gsub(pattern = ", NA", replacement = "", x = .)
+            , .before = Cumul_no
+        ) %>%
+        mutate(TaxaLabel = case_when(
+            TaxaLabel == "NA" ~ Phylum,
+            .default = TaxaLabel
+        ))
+
+    # Sheet.display$TaxaLabel
+
+    # Sheet.display <- Subsheet %>%
+    #     mutate(
+    #         Taxa = case_when(
+    #             all(is.na(c(Class_subclass, Class_Subclass, Order, Family, Genus, Species))) ~ paste(Phylum, Class_subclass, Class_Subclass, Order, Family, Genus, Species, sep = ", ") %>% 
+    #             gsub(pattern = ", NA", replacement =  "", x = .),
+
+    #             .default = paste(Class_subclass, Class_Subclass, Order, Family, Genus, Species, sep = ", ") %>% 
+    #             gsub(pattern = ", NA", replacement =  "", x = .)
+    #         )
+    #     )
+
+    Sheet.display.clean <- Sheet.display %>%
+        dplyr::select(c("OCSS unique no.", "Dive_no", "Site", "Final_preserv", "No_individ", "Depth", "Subsample.label.char", "TaxaLabel")) %>%
+        mutate(
+            OCSS = as.numeric(`OCSS unique no.`),
+            Dive = Dive_no,
+            Preservation = Final_preserv,
+            "No. Ind." = No_individ,
+            Depth = round(Depth, 2),
+            # Latitude = round(Lat, 5),
+            # Longitude = round(Long, 5),
+            Subsample = Subsample.label.char,
+            .keep = "unused"
+        ) %>%
+        mutate_all(as.character)
+
+    Sheet.display.clean[is.na(Sheet.display.clean)] <- ""
+
+    Sheet.display.clean %>%
+        dplyr::select(c("OCSS", "TaxaLabel", "Dive", "Site", "Subsample"), everything()) %>%
+        mutate(
+            OCSS = as.numeric(OCSS)
+            ) %>%
+        arrange(TaxaLabel, OCSS, Dive, .by_group = T)
+})
+```
+
+\pagebreak
+
+## Abbreviations
+
+### Site
+
+- **EMI**: East Montagu Island
+- **MSM**: Minke Seamount
+- **NT**: North Trench
+- **SE**: Saunders East
+- **SMB**: South Montagu Bank
+- **ST**: South Trench Site
+- **WSI**: West Saunders Island
+
+## Specimens List by Taxa
+
+```{r}
+#| echo: false
+#| output: asis
+
+walk(1:length(Specimen.table), \(x){
+    cat("### ", names(Specimen.sheet.list)[[x]], "\n\n")
+    print(kable(Specimen.table[[x]]) %>%
+        column_spec(2, width = "25em") %>%
+        column_spec(5, width = "8em") %>%
+        # column_spec(7, width = "5em") %>%
+        kable_styling(font_size = 8)
+        )
+    cat("\n \\pagebreak \n\n")
+})
+```
+
+
