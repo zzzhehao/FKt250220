@@ -37,5 +37,3 @@ Specimen.Subsample.Label <- Specimen.Log_cleaned %>%
     summarize(Subsample.label.char = paste(Subsample.label, collapse = ", "))
 
 Specimen.sheet <- left_join(Specimen.Log_cleaned, Specimen.Subsample.Label, by = "OCSS unique no.")
-
-str(Specimen.sheet)

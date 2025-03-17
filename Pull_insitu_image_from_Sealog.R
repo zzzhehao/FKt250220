@@ -4,7 +4,7 @@
 #' 
 #' CruiseData and CruiseSandbox should always be connected and accessible.
 #' 
-#' It might be better to change the wd (working directory), pathway to CruiseData and CruiseSandbox at line 61, 66-67 in your local version to avoid specifying everytime.
+#' It might be better to change the wd (working directory), pathway to CruiseData and CruiseSandbox at line 64, 69-70 in your local version to avoid specifying everytime.
 #' 
 #' @description
 #' This will pull all images (ASNAP, FRAMEGRAB, HIGHLIGHT, SAMPLE, OBSERVATION) taken from 5 minutes prior to 1 minutes after the sampling time point. The function will create a "cache" folder in working directory to store the image metadata from each dive, keeping those files will reduce the operation time. The function will create a folder "Preview" (if still not exists) and copy all images from defined time range into the folder. Both Scicam and Sitcam images will be copied. The function will delete all existing image from the "Preview" folder everytime before copying new images into it.
@@ -61,12 +61,12 @@ pull_from_sealog <- function(Specimen.OCSS, lran = 5, rran = 1, wd = NULL, Cruis
     #### == Settings == ####
     
     # Working Place
-    if (is.null(wd)) {wd <- "12 Dive Documents/Script"} # Windows user has to change all back slash into normal slash "/". Back slash will escape next symbol in R.
+    if (is.null(wd)) {wd <- "."} # Windows user has to change all back slash into normal slash "/". Back slash will escape next symbol in R.
     preview_folder <- paste(wd, "Preview", sep = "/")
     dir.create(preview_folder)
     
     # Path to Drive
-    if (is.null(CruiseData)) {CruiseData <- "/Volumes/CruiseData"}
+    if (is.null(CruiseData)) {CruiseData <- "Z:"}
     if (is.null(CruiseSandbox)) {CruiseSandbox <-"/Volumes/CruiseSandbox"}
     
     CruiseID <- "Fkt250220"
@@ -77,7 +77,7 @@ pull_from_sealog <- function(Specimen.OCSS, lran = 5, rran = 1, wd = NULL, Cruis
     file.remove(pre_previews)
     
     # Path to Specimen Log
-    SpecimenLog.folder <- paste(CruiseSandbox, "ParticipantData/02_Specimen_Data/Specimen_log", sep = "/")
+    SpecimenLog.folder <- paste(CruiseSandbox, "ParticipantData/02_Specimen_Data/Specimen_log", sep = "")
 
     files <- list.files(SpecimenLog.folder, pattern = "^FKt250220 Master Specimen Log", full.names = T) 
     
